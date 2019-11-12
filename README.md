@@ -1,3 +1,5 @@
 # dyntrigger
-A package for detecting dynamic triggering
+A package for detecting dynamic triggering.
+
+
 The second version.
