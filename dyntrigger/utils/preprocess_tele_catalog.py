@@ -8,7 +8,8 @@ from obspy.taup import TauPyModel
 from obspy.signal.trigger import classic_sta_lta
 from obspy.signal.trigger import plot_trigger, trigger_onset
 model = TauPyModel(model="iasp91")
-from dyntrigger.utils.pyTOOL.cal_distance import haversine
+
+from dyntrigger.utils.cal_distance import haversine
 
 # TOOL
 
@@ -86,7 +87,7 @@ def BE_A_vel(dat_path, dat_file):
     return None
 
 
-def Bvel_Evel(catalog_file, sta_lat,sta_lon,Tb, vel_B, vel_E):
+def Bvel_Evel(catalog_file, sta_lat, sta_lon, Tb, vel_B, vel_E):
     dat = pd.read_csv(catalog_file)
     # calculate B_time and E_time
     A_time_list = []
@@ -94,26 +95,25 @@ def Bvel_Evel(catalog_file, sta_lat,sta_lon,Tb, vel_B, vel_E):
     Tb_E_list = []
     Te_B_list = []
     Te_E_list = []
-    dist_list=[]
+    dist_list = []
     for i in range(len(dat)):
         time = dat.iloc[i]['time']
         ot = UTCDateTime(time)
         depth = dat.iloc[i]['depth']
         event_lat = dat.iloc[i]['latitude']
         event_lon = dat.iloc[i]['longitude']
-        if sta_lon == None and sta_lat == None:
+        if sta_lon is None and sta_lat is None:
             dist_km = dat.iloc[i]['dist(km)']
             distance_in_degree = dist_km / 111
         else:
-            dist_km,distance_in_degree=haversine(sta_lon,sta_lat,event_lon,event_lat)
-
+            dist_km, distance_in_degree = haversine(
+                sta_lon, sta_lat, event_lon, event_lat)
 
         A_time = a_abstime(ot, depth, distance_in_degree)
         Tb_B = A_time - Tb
         Tb_E = A_time
         Te_B = vel_abstime(ot, vel_B, dist_km)
         Te_E = vel_abstime(ot, vel_E, dist_km)
-
 
         A_time_list.append(str(A_time))
         Tb_B_list.append(str(Tb_B))
@@ -127,7 +127,7 @@ def Bvel_Evel(catalog_file, sta_lat,sta_lon,Tb, vel_B, vel_E):
     dat['Tb_E_time'] = Tb_E_list
     dat['Te_B_time'] = Te_B_list
     dat['Te_E_time'] = Te_E_list
-    if sta_lon != None and sta_lat != None:
+    if sta_lon is not None and sta_lat is not None:
         dat['dist(km)'] = dist_list
 
     dat.to_csv(catalog_file, index=False)
@@ -239,14 +239,14 @@ def catalog_during_days(teleseismic_catalog, out_file, dayWindow=30):
     f_max = catalog['f_max'].values
     for i in range(len(tele_ot)):
         tele_datetime = UTCDateTime(tele_ot[i])
-        print ('Background days for: '+str(tele_datetime))
+        print('Background days for: ' + str(tele_datetime))
         A_time_datetime = UTCDateTime(A_time[i])
         Tb_B_datetime = UTCDateTime(Tb_B[i])
         Tb_E_datetime = UTCDateTime(Tb_E[i])
         Te_B_datetime = UTCDateTime(Te_B[i])
         Te_E_datetime = UTCDateTime(Te_E[i])
 
-        days = np.arange(-1 * (dayWindow/2), (dayWindow/2) + 1, 1)
+        days = np.arange(-1 * (dayWindow / 2), (dayWindow / 2) + 1, 1)
         for day in days[days != 0]:
             tar_time = tele_datetime + timedelta(days=int(day))
             tar_A_time = A_time_datetime + timedelta(days=int(day))
@@ -254,8 +254,18 @@ def catalog_during_days(teleseismic_catalog, out_file, dayWindow=30):
             tar_Tb_E_time = Tb_E_datetime + timedelta(days=int(day))
             tar_Te_B_time = Te_B_datetime + timedelta(days=int(day))
             tar_Te_E_time = Te_E_datetime + timedelta(days=int(day))
-            out_tele.append([str(tar_time), str(tar_A_time), str(tar_Tb_B_time), str(
-                tar_Tb_E_time), str(tar_Te_B_time), str(tar_Te_E_time), lat[i], lon[i], depth[i], dist[i], f_min[i], f_max[i]])
+            out_tele.append([str(tar_time),
+                             str(tar_A_time),
+                             str(tar_Tb_B_time),
+                             str(tar_Tb_E_time),
+                             str(tar_Te_B_time),
+                             str(tar_Te_E_time),
+                             lat[i],
+                             lon[i],
+                             depth[i],
+                             dist[i],
+                             f_min[i],
+                             f_max[i]])
     out_dataframe = pd.DataFrame(
         data=out_tele,
         columns=[
@@ -273,17 +283,3 @@ def catalog_during_days(teleseismic_catalog, out_file, dayWindow=30):
             'f_max'])
     out_dataframe.to_csv(out_file, index=False)
     return None
-
-
-if __name__ == '__main__':
-    # #referenceLocation = [26.5, 103]
-    # dat_path = '/Users/yunnaidan/Project/Research/Dynamic_triggering/Xiaojiang/Data/Xiaojiang'
-    # dat_file = 'EQ_info.csv'
-    # timeWindow_len=8000
-    # #out_file = 'EQ_info_part2.csv'
-    #
-    # preprocess_Geysers_absBEtime(dat_path, dat_file)
-    # #preprocess_Xiaojiang_absBEtime(dat_path, dat_file, timeWindow_len)
-    catalogfile = '/Users/yunnaidan/Project/Research/Dynamic_triggering/Xiaojiang/Data/Geysers/vel5_timewindow/EQ_info_GeysersGDX.csv'
-    #preprocess_Geysers_changeTimewindow(catalogfile)
-    print('Finish')
