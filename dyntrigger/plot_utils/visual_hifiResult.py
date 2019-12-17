@@ -1,11 +1,3 @@
-"""
-@version:
-author:yunnaidan
-@time:
-@file: visual_hifiResult.py
-@function: Some visualization function for the results of the HiFi method.
-"""
-
 import pandas as pd
 import numpy as np
 from obspy import UTCDateTime
