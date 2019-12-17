@@ -199,16 +199,6 @@ def run_pi_parallel(
                  f_win_list,
                  Gf_parameters,
                  out_folder))
-            # pi41day(
-            #      year,
-            #      day,
-            #      sta,
-            #      chn,
-            #      data_path,
-            #      time_segment,
-            #      f_win_list,
-            #      Gf_parameters,
-            #      out_folder)
 
         # chunksize is how many tasks will be processed by one processor
         rs = pool.starmap_async(pi41day, tasks, chunksize=1)
