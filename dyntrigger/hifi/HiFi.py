@@ -20,20 +20,21 @@ class HiFi(object):
         self.sta_file = hypers['info']['sta_file']
         self.sta_list = self.load_sta()
         self.chn_list = hypers['info']['chn_list']
-        self.time_segment = hypers['PI']['time_segment']
-        self.f_win_list = hypers['PI']['f_win_list']
+        self.time_segment = hypers['pi']['time_segment']
+        self.f_win_list = hypers['pi']['f_win_list']
         self.day_window = hypers['background_PIR']['day_window']
 
         self.root_path = hypers['info']['root_path']
-        self.gf_info = os.path.join(self.root_path, hypers['PI']['gf_info_file'])
-        self.raw_data_path = os.path.join(self.root_path, hypers['PI']['raw_data_path'])
-        self.pi_database_path = os.path.join(self.root_path, hypers['PI']['pi_database_path'])
+        self.gf_info = os.path.join(self.root_path, hypers['pi']['gf_info'])
+        self.raw_data_path = os.path.join(self.root_path, hypers['pi']['raw_data_path'])
+        self.pi_database_path = os.path.join(self.root_path, hypers['pi']['pi_database_path'])
         self.tele_catalog = os.path.join(self.root_pat, hypers['tele_pir']['tele_catalog'])
         self.tele_pir_path = os.path.join(self.root_path, hypers['tele_pir']['tele_pir_path'])
-        self.background_catalog = os.path.join(self.root_path, hypers['background_pir']['background_catalog_file'])
+        self.background_catalog = os.path.join(self.root_path, hypers['background_pir']['background_catalog'])
         self.background_pir_path = os.path.join(self.root_path, hypers['background_pir']['background_pir_path'])
-        self.background_pir_associated_path = os.path.join(self.root_path, hypers['background_PIR']['asso_bgPIR_path'])
-        self.cl_path = os.path.join(self.root_path, hypers['confidence_level']['CL_path'])
+        self.background_pir_associated_path = os.path.join(self.root_path,
+                                                           hypers['background_pir']['background_pir_associated_path'])
+        self.cl_path = os.path.join(self.root_path, hypers['confidence_level']['cl_path'])
 
     def load_sta(self):
         with open(self.sta_file, 'r') as f:
@@ -200,7 +201,6 @@ class HiFi(object):
                         self.background_pir_path, sta + '.' + chn + '_background_PIR.csv')
                     out_file = os.path.join(
                         self.background_pir_associated_path, sta + '.' + chn + '_background_PIR_associated.csv')
-                    # PIR_associate(telesesmic_catalog, background_PIR_file, 'PIRatio_log', dayWindow, out_file)
                     tasks.append(
                         (self.tele_catalog,
                          background_pir_file,

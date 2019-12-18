@@ -1,0 +1,28 @@
+{
+    "info": {
+        "root_path": ".",
+        "sta_file": "data/station.txt",
+        "chn_list": ["BHZ"]
+    },
+    "pi": {
+        "cores":2,
+        "time_segment": 30,
+        "f_win_list": [[5, 10], [10, 15], [15, 20]],
+        "gf_info": "data/PZ_info.csv",
+        "raw_data_path": "data/sac",
+        "pi_database_path": "result/PI_database"
+    },
+    "tele_pir": {
+        "tele_catalog": "data/teleseismic_catalog.csv",
+        "tele_pir_path": "result/tele_pir"
+    },
+    "background_pir": {
+        "day_window": 180,
+        "background_catalog": "data/background_catalog.csv",
+        "background_pir_path": "result/background_PIR",
+        "background_pir_associated_path": "result/background_PIR_associated"
+    },
+    "confidence_level": {
+        "cl_path": "result/confidence_level"
+    }
+}
