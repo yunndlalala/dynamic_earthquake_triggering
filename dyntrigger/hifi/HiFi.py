@@ -28,7 +28,7 @@ class HiFi(object):
         self.gf_info = os.path.join(self.root_path, hypers['pi']['gf_info'])
         self.raw_data_path = os.path.join(self.root_path, hypers['pi']['raw_data_path'])
         self.pi_database_path = os.path.join(self.root_path, hypers['pi']['pi_database_path'])
-        self.tele_catalog = os.path.join(self.root_pat, hypers['tele_pir']['tele_catalog'])
+        self.tele_catalog = os.path.join(self.root_path, hypers['tele_pir']['tele_catalog'])
         self.tele_pir_path = os.path.join(self.root_path, hypers['tele_pir']['tele_pir_path'])
         self.background_catalog = os.path.join(self.root_path, hypers['background_pir']['background_catalog'])
         self.background_pir_path = os.path.join(self.root_path, hypers['background_pir']['background_pir_path'])
@@ -48,15 +48,14 @@ class HiFi(object):
 
         return sta_list
 
-    def net_pi(self, cores):
+    def net_pi(self, cores=1):
         if os.path.exists(self.pi_database_path):
             os.removedirs(self.pi_database_path)
         os.makedirs(self.pi_database_path)
 
         for sta in self.sta_list:
-            print(sta)
             for chn in self.chn_list:
-                print(' ' + chn)
+                print(sta, chn)
                 out_folder = os.path.join(self.pi_database_path, sta + '.' + chn)
                 if not os.path.exists(out_folder):
                     os.makedirs(out_folder)
@@ -78,9 +77,8 @@ class HiFi(object):
 
         if cores == 1:
             for sta in self.sta_list:
-                print(sta)
                 for chn in self.chn_list:
-                    print(' ' + chn)
+                    print(sta, chn)
                     pi_database_folder = os.path.join(self.pi_database_path, sta + '.' + chn)
                     out_file = os.path.join(self.tele_pir_path, sta + '.' + chn + '_PIR.csv')
                     HighPIRatio.run_pir(
@@ -120,19 +118,19 @@ class HiFi(object):
 
         return None
 
-    def net_background_pir(self,cores=1):
-
+    def gen_background_catalog(self):
         catalog_during_days(self.tele_catalog, self.background_catalog, self.day_window)
+        return None
 
+    def net_background_pir(self,cores=1):
         if os.path.exists(self.background_pir_path):
             os.removedirs(self.background_pir_path)
         os.makedirs(self.background_pir_path)
 
         if cores == 1:
             for sta in self.sta_list:
-                print(sta)
                 for chn in self.chn_list:
-                    print(' ' + chn)
+                    print(sta, chn)
                     pi_database_folder = os.path.join(
                         self.pi_database_path, sta + '.' + chn)
                     out_file = os.path.join(
@@ -183,15 +181,14 @@ class HiFi(object):
 
         if cores == 1:
             for sta in self.sta_list:
-                print(sta)
                 for chn in self.chn_list:
-                    print(' ' + chn)
+                    print(sta, chn)
                     background_pir_file = os.path.join(
                         self.background_pir_path, sta + '.' + chn + '_background_PIR.csv')
                     out_file = os.path.join(
                         self.background_pir_associated_path, sta + '.' + chn + '_background_PIR_associated.csv')
                     AssociateBackgroundPIR.run_associate(
-                        self.tele_catalog, background_pir_file, 'PIRatio_log', self.day_window, out_file)
+                        self.tele_catalog, background_pir_file, 'PIR_log', self.day_window, out_file)
         else:
             pool = multiprocessing.Pool(processes=cores)
             tasks = []
@@ -204,7 +201,7 @@ class HiFi(object):
                     tasks.append(
                         (self.tele_catalog,
                          background_pir_file,
-                         'PIRatio_log',
+                         'PIR_log',
                          self.day_window,
                          out_file))
 
@@ -235,9 +232,8 @@ class HiFi(object):
 
         if cores == 1:
             for sta in self.sta_list:
-                print(sta)
                 for chn in self.chn_list:
-                    print(' ' + chn)
+                    print(sta, chn)
                     background_pir_associated_file = os.path.join(
                         self.background_pir_associated_path,
                         sta + '.' + chn + '_background_PIR_associated.csv')

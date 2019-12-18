@@ -237,6 +237,7 @@ def catalog_during_days(teleseismic_catalog, out_file, dayWindow=30):
     dist = catalog['dist(km)'].values
     f_min = catalog['f_min'].values
     f_max = catalog['f_max'].values
+    f_step = catalog['f_step'].values
     for i in range(len(tele_ot)):
         tele_datetime = UTCDateTime(tele_ot[i])
         print('Background days for: ' + str(tele_datetime))
@@ -265,7 +266,8 @@ def catalog_during_days(teleseismic_catalog, out_file, dayWindow=30):
                              depth[i],
                              dist[i],
                              f_min[i],
-                             f_max[i]])
+                             f_max[i],
+                             f_step[i]])
     out_dataframe = pd.DataFrame(
         data=out_tele,
         columns=[
@@ -280,6 +282,7 @@ def catalog_during_days(teleseismic_catalog, out_file, dayWindow=30):
             'depth',
             'dist(km)',
             'f_min',
-            'f_max'])
+            'f_max',
+            'f_step'])
     out_dataframe.to_csv(out_file, index=False)
     return None

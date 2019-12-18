@@ -151,7 +151,7 @@ def pi41day(
 
     segment_count = int(86400 / time_segment)
     for i in range(segment_count):
-        abs_time = abs_time(day, time_segment, i)
+        abs_time_value = abs_time(day, time_segment, i)
         # If the index exceeds the length of the data, no error will be thrown,
         # but empty array.
         data = tr.data[int(i * time_segment * fs):int((i + 1) * time_segment * fs + 1)]
@@ -162,7 +162,7 @@ def pi41day(
             PI_list.append(PI)
 
         with open(outfile, 'a') as f:
-            f.write(str(abs_time))
+            f.write(str(abs_time_value))
             for PI in PI_list:
                 f.write(',' + str(PI))
             f.write('\n')
@@ -189,6 +189,7 @@ def run_pi_parallel(
                 continue
 
             Gf_parameters = load_gf(sacfile, Gf_info_file)
+            # pi41day(year, day, sta, chn, data_path, time_segment, f_win_list, Gf_parameters, out_folder)
             tasks.append(
                 (year,
                  day,

@@ -62,11 +62,11 @@ def run_associate(
         columns=['time', 'background_PIRs'])
 
     for tele_index, tele in enumerate(tele_list):
-        # print('Associate data of teleseism : %s' % str(tele))
+        print('Associate data of %s' % str(tele))
         tele_background_PIR_df.loc[tele_index, 'time'] = tele
 
         tar_background_list = get_tar_background(tele, dayWindow)
-        bgPIR_list = background_PIR_df[background_PIR_df['event'].isin(
+        bgPIR_list = background_PIR_df[background_PIR_df['time'].isin(
             tar_background_list)][PIR_column_name].values
 
         # Remove the abnormal background event's HighPID data.

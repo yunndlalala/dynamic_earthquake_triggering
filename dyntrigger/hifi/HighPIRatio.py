@@ -136,13 +136,13 @@ def pir41event(
         sta, chn, Tb_B, Te_E, PIdatabase_path)
 
     if file_exist:
-        PIdata_frame['Time'] = [UTCDateTime(Time)
-                                for Time in PIdata_frame['Time']]
-        tar_df_b0 = PIdata_frame[(PIdata_frame['Time'] >= Tb_B)
-                                 & (PIdata_frame['Time'] <= Tb_E)]
+        PIdata_frame['time'] = [UTCDateTime(t)
+                                for t in PIdata_frame['time']]
+        tar_df_b0 = PIdata_frame[(PIdata_frame['time'] >= Tb_B)
+                                 & (PIdata_frame['time'] <= Tb_E)]
         tar_df_b = PIdata_frame.iloc[tar_df_b0.index - 1]
-        tar_df_e = PIdata_frame[(PIdata_frame['Time'] >= Te_B) & (
-            PIdata_frame['Time'] <= Te_E)]
+        tar_df_e = PIdata_frame[(PIdata_frame['time'] >= Te_B) & (
+            PIdata_frame['time'] <= Te_E)]
 
         column_name = f_column_name(f_min, f_max, step=f_step)
         interrupt_b, PI_b, list4plot_b = sum_pi(column_name, tar_df_b)
@@ -176,13 +176,13 @@ def pir41event(
 
 def run_pir(catalog, PIdatabase_path, sta, chn, out_file):
     with open(out_file, 'a') as f:
-        f.write(','.join(['time', 'PI_b', 'PI_e', 'pir', 'PIRatio_log']))
+        f.write(','.join(['time', 'PI_b', 'PI_e', 'PIR', 'PIR_log']))
         f.write('\n')
 
     event_df = pd.read_csv(catalog)
     for row_index, row in event_df.iterrows():
         event = UTCDateTime(event_df.iloc[row_index]['time'])
-        print('Calculate %s...' % event)
+        print('Calculate pir of %s' % event)
 
         Tb_B = UTCDateTime(event_df.iloc[row_index]['Tb_B_time'])
         Tb_E = UTCDateTime(event_df.iloc[row_index]['Tb_E_time'])
