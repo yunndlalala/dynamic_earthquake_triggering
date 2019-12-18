@@ -22,7 +22,7 @@ class HiFi(object):
         self.chn_list = hypers['info']['chn_list']
         self.time_segment = hypers['pi']['time_segment']
         self.f_win_list = hypers['pi']['f_win_list']
-        self.day_window = hypers['background_PIR']['day_window']
+        self.day_window = hypers['background_pir']['day_window']
 
         self.root_path = hypers['info']['root_path']
         self.gf_info = os.path.join(self.root_path, hypers['pi']['gf_info'])

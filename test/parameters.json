@@ -1,6 +1,6 @@
 {
     "info": {
-        "root_path": ".",
+        "root_path": "/Users/yunnaidan/Project/Dynamic_triggering/_source/test",
         "sta_file": "data/station.txt",
         "chn_list": ["BHZ"]
     },
