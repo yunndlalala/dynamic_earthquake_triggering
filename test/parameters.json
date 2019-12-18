@@ -5,7 +5,6 @@
         "chn_list": ["BHZ"]
     },
     "pi": {
-        "cores":2,
         "time_segment": 30,
         "f_win_list": [[5, 10], [10, 15], [15, 20]],
         "gf_info": "data/PZ_info.csv",
@@ -14,7 +13,7 @@
     },
     "tele_pir": {
         "tele_catalog": "data/teleseismic_catalog.csv",
-        "tele_pir_path": "result/tele_pir"
+        "tele_pir_path": "result/tele_PIR"
     },
     "background_pir": {
         "day_window": 180,

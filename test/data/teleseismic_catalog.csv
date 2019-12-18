@@ -1,2 +1,2 @@
-time,latitude,longitude,depth,mag,magType,place,f_min,f_max
-2009-01-03T22:33:40.290Z,-0.691,133.305,23,7.4,mwc,"near the north coast of Papua, Indonesia",5,20
+time,latitude,longitude,depth,mag,magType,place,f_min,f_max,f_step
+2009-01-03T22:33:40.290Z,-0.691,133.305,23,7.4,mwc,"near the north coast of Papua, Indonesia",5,20,5
