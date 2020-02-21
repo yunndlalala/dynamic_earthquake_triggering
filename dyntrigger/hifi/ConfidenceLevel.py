@@ -7,49 +7,57 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 import re
+import logging
+
+logging.basicConfig(
+    filename='log.txt',
+    format='%(asctime)s-%(name)s-%(levelname)s-%(module)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S %p',
+    level=logging.INFO,
+    filemode='w')
 
 
-def cl41event(row, PIR_columnname, tele_PIR_df):
-    if row['time'] in tele_PIR_df['time'].values:
-        PIRs = re.split(' +', row['background_PIRs'][1:-1])
-        PIRs = [i for i in PIRs if (i != '')]
-        background_PIR_list = np.array(PIRs, dtype='float64')
-        if len(background_PIR_list) < 30:
-            confidence_level_value = 'missing background PIR'
+def cl41event(row, pir_columnname, tele_pir_df):
+    if row['time'] in tele_pir_df['time'].values:
+        pirs = re.split(' +', row['background_PIRs'][1:-1])
+        pirs = [i for i in pirs if (i != '')]
+        background_pir_list = np.array(pirs, dtype='float64')
+        if len(background_pir_list) < 30:
+            confidence_level_value = 'Insufficient background PIR'
         else:
-            tele_PIR = float(
-                tele_PIR_df[tele_PIR_df['time'] == row['time']][PIR_columnname].values)
+            tele_pir = float(
+                tele_pir_df[tele_pir_df['time'] == row['time']][pir_columnname].values)
 
-            mean, std = stats.norm.fit(background_PIR_list)
+            mean, std = stats.norm.fit(background_pir_list)
             background_norm = stats.norm(loc=mean, scale=std)
 
-            confidence_level_value = background_norm.cdf(tele_PIR)
+            confidence_level_value = background_norm.cdf(tele_pir)
     else:
-        confidence_level_value = 'missing teleseismic PIR'
+        confidence_level_value = 'No teleseismic PIR'
 
     return confidence_level_value
 
 
 def run_cl(
-        background_PIR_associated_file,
-        tele_PIR_file,
+        background_pir_associated_file,
+        tele_pir_file,
         out_file,
-        PIR_columnname):
+        pir_column_name):
 
-    tele_PIR_df = pd.read_csv(tele_PIR_file)
+    tele_pir_df = pd.read_csv(tele_pir_file)
 
-    tele_background_PIR_df = pd.read_csv(background_PIR_associated_file)
+    tele_background_pir_df = pd.read_csv(background_pir_associated_file)
 
     confidence_level_list = []
 
-    for row_index, row in tele_background_PIR_df.iterrows():
+    for row_index, row in tele_background_pir_df.iterrows():
         print ('Calculate cl of %s' % row['time'])
-        confidence_level_value = cl41event(row, PIR_columnname, tele_PIR_df)
+        confidence_level_value = cl41event(row, pir_column_name, tele_pir_df)
         confidence_level_list.append([row['time'], confidence_level_value])
 
-    CL_dataframe = pd.DataFrame(
+    cl_dataframe = pd.DataFrame(
         data=confidence_level_list, columns=[
             'time', 'confidence_level_value'])
-    CL_dataframe.to_csv(out_file, index=False)
+    cl_dataframe.to_csv(out_file, index=False)
 
-    return CL_dataframe
+    return cl_dataframe

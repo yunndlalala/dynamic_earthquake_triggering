@@ -1,100 +1,43 @@
 import pandas as pd
 import numpy as np
-import os
-import obspy
 from datetime import datetime, timedelta
 from obspy.core.utcdatetime import UTCDateTime
 from obspy.taup import TauPyModel
-from obspy.signal.trigger import classic_sta_lta
-from obspy.signal.trigger import plot_trigger, trigger_onset
-model = TauPyModel(model="iasp91")
 
-from dyntrigger.utils.cal_distance import haversine
+from dyntrigger.utils.basic_utils import haversine
+
+
 
 # TOOL
-
-
 def str2datetime(str_list):
     datetime_lst = [datetime.strptime(
         i[:10] + ' ' + i[11:-1], '%Y-%m-%d %H:%M:%S.%f') for i in str_list]
     return datetime_lst
 
 
-def a_abstime(ot, depth, distance_in_degree):
+def abs_arrival_time(ot, depth, distance_in_degree):
+    model = TauPyModel(model="iasp91")
     arrivals = model.get_travel_times(source_depth_in_km=depth,
                                       distance_in_degree=distance_in_degree)
-    B_time = ot + arrivals[0].time
-    return B_time
+    arrival_time = ot + arrivals[0].time
+    return arrival_time
 
 
-def vel_abstime(ot, vel, distance_in_km):
+def abs_phase_time(ot, vel, distance_in_km):
     travel_time = distance_in_km / vel
-    E_time = ot + travel_time
-    return E_time
+    phase_time = ot + travel_time
+    return phase_time
 
-
-def make_stalta_as_Etime_abs(
-        trace,
-        ot,
-        sta,
-        lta,
-        thr_on,
-        thr_off,
-        fig_outfile=None):
-    df = trace.stats.sampling_rate
-    tar_trace = trace.slice(
-        starttime=ot,
-        endtime=ot + 7200,
-        nearest_sample=True)
-    cft = classic_sta_lta(tar_trace, int(sta * df), int(lta * df))
-    on_off = np.array(trigger_onset(cft, thr_on, thr_off))
-    if len(on_off) == 0:
-        Etime = 0
-    else:
-        Epoint = on_off[0][1]
-        Etime = ot + Epoint / df
-
-    if fig_outfile is not None:
-        fig = plot_trigger(tar_trace, cft, thr_on, thr_off, show=False)
-        fig.savefig(fig_outfile)
-    return Etime
 
 # Main functions for time windows
-
-
-def BE_A_vel(dat_path, dat_file):
-    dat = pd.read_csv(os.path.join(dat_path, dat_file))
-    # calculate B_time and E_time
-    B_time_list = []
-    E_time_list = []
-    for i in range(len(dat)):
-        time = dat.iloc[i]['time']
-        ot = UTCDateTime(time)
-        depth = dat.iloc[i]['depth']
-        dist_km = dat.iloc[i]['dist(km)']
-        distance_in_degree = dist_km / 111
-        B_time = a_abstime(ot, depth, distance_in_degree)
-
-        vel = 2
-        E_time = vel_abstime(ot, vel, dist_km)
-
-        B_time_list.append(str(B_time))
-        E_time_list.append(str(E_time))
-    dat['B_time'] = B_time_list
-    dat['E_time'] = E_time_list
-
-    dat.to_csv(os.path.join(dat_path, dat_file), index=False)
-    return None
-
-
-def Bvel_Evel(catalog_file, sta_lat, sta_lon, Tb, vel_B, vel_E):
+def begin_a_end_fixed(catalog_file, sta_lat, sta_lon, tb, te):
     dat = pd.read_csv(catalog_file)
-    # calculate B_time and E_time
-    A_time_list = []
-    Tb_B_list = []
-    Tb_E_list = []
-    Te_B_list = []
-    Te_E_list = []
+
+    a_time_list = []
+    tb_b_list = []
+    tb_e_list = []
+    te_b_list = []
+    te_e_list = []
     dist_list = []
     for i in range(len(dat)):
         time = dat.iloc[i]['time']
@@ -109,24 +52,24 @@ def Bvel_Evel(catalog_file, sta_lat, sta_lon, Tb, vel_B, vel_E):
             dist_km, distance_in_degree = haversine(
                 sta_lon, sta_lat, event_lon, event_lat)
 
-        A_time = a_abstime(ot, depth, distance_in_degree)
-        Tb_B = A_time - Tb
-        Tb_E = A_time
-        Te_B = vel_abstime(ot, vel_B, dist_km)
-        Te_E = vel_abstime(ot, vel_E, dist_km)
+        a_time = abs_arrival_time(ot, depth, distance_in_degree)
+        tb_b = a_time - tb
+        tb_e = a_time
+        te_b = a_time
+        te_e = te_b + te
 
-        A_time_list.append(str(A_time))
-        Tb_B_list.append(str(Tb_B))
-        Tb_E_list.append(str(Tb_E))
-        Te_B_list.append(str(Te_B))
-        Te_E_list.append(str(Te_E))
+        a_time_list.append(str(a_time))
+        tb_b_list.append(str(tb_b))
+        tb_e_list.append(str(tb_e))
+        te_b_list.append(str(te_b))
+        te_e_list.append(str(te_e))
         dist_list.append(dist_km)
 
-    dat['A_time'] = A_time_list
-    dat['Tb_B_time'] = Tb_B_list
-    dat['Tb_E_time'] = Tb_E_list
-    dat['Te_B_time'] = Te_B_list
-    dat['Te_E_time'] = Te_E_list
+    dat['A_time'] = a_time_list
+    dat['Tb_B_time'] = tb_b_list
+    dat['Tb_E_time'] = tb_e_list
+    dat['Te_B_time'] = te_b_list
+    dat['Te_E_time'] = te_e_list
     if sta_lon is not None and sta_lat is not None:
         dat['dist(km)'] = dist_list
 
@@ -135,101 +78,115 @@ def Bvel_Evel(catalog_file, sta_lat, sta_lon, Tb, vel_B, vel_E):
     return None
 
 
-def BE_stalta(
-        catalog_file,
-        data_path,
-        sta_lta_parameter,
-        catalog_outfile,
-        fig_outpath=None):
+
+def begin_v_end_fixed(catalog_file, sta_lat, sta_lon, tb, vel_begin, te):
     dat = pd.read_csv(catalog_file)
-    # calculate B_time and E_time
-    B_time_list = []
-    E_time_list = []
+
+    a_time_list = []
+    tb_b_list = []
+    tb_e_list = []
+    te_b_list = []
+    te_e_list = []
+    dist_list = []
     for i in range(len(dat)):
         time = dat.iloc[i]['time']
-        # time='2012-02-13T21:07:02.77Z'
-        print(time)
         ot = UTCDateTime(time)
         depth = dat.iloc[i]['depth']
-        dist_km = dat.iloc[i]['dist(km)']
-        distance_in_degree = dist_km / 111
-        B_time = a_abstime(ot, depth, distance_in_degree)
-        # calculate Etime
-        date, t = time.split('T')
-        event_folder = ''.join(date.split('-')) + ''.join(t.split(':'))[:-1]
-        st = obspy.read(os.path.join(data_path, event_folder, '*Z'))
-        trace = st[0]
-        sta, lta, thr_on, thr_off = sta_lta_parameter
-        if fig_outpath is not None:
-            fig_outfile = os.path.join(fig_outpath, event_folder + '.pdf')
+        event_lat = dat.iloc[i]['latitude']
+        event_lon = dat.iloc[i]['longitude']
+        if sta_lon is None and sta_lat is None:
+            dist_km = dat.iloc[i]['dist(km)']
+            distance_in_degree = dist_km / 111
         else:
-            fig_outfile = None
-        E_time = make_stalta_as_Etime_abs(
-            trace, ot, sta, lta, thr_on, thr_off, fig_outfile)
+            dist_km, distance_in_degree = haversine(
+                sta_lon, sta_lat, event_lon, event_lat)
 
-        B_time_list.append(str(B_time))
-        E_time_list.append(str(E_time))
-    dat['B_time'] = B_time_list
-    dat['E_time'] = E_time_list
+        a_time = abs_arrival_time(ot, depth, distance_in_degree)
+        tb_b = a_time - tb
+        tb_e = a_time
+        te_b = abs_phase_time(ot, vel_begin, dist_km)
+        te_e = te_b + te
 
-    dat.to_csv(catalog_outfile, index=False)
+        a_time_list.append(str(a_time))
+        tb_b_list.append(str(tb_b))
+        tb_e_list.append(str(tb_e))
+        te_b_list.append(str(te_b))
+        te_e_list.append(str(te_e))
+        dist_list.append(dist_km)
+
+    dat['A_time'] = a_time_list
+    dat['Tb_B_time'] = tb_b_list
+    dat['Tb_E_time'] = tb_e_list
+    dat['Te_B_time'] = te_b_list
+    dat['Te_E_time'] = te_e_list
+    if sta_lon is not None and sta_lat is not None:
+        dat['dist(km)'] = dist_list
+
+    dat.to_csv(catalog_file, index=False)
+
+    return None
 
 
-def Bvel_Efixedwindow(catalogfile, timewindow, catalog_outfile):
-    dat = pd.read_csv(catalogfile)
-    # calculate B_time and E_time
-    E_time_list = []
+def begin_v_end_v(catalog_file, sta_lat, sta_lon, tb, vel_begin, vel_end):
+    dat = pd.read_csv(catalog_file)
+
+    a_time_list = []
+    tb_b_list = []
+    tb_e_list = []
+    te_b_list = []
+    te_e_list = []
+    dist_list = []
     for i in range(len(dat)):
         time = dat.iloc[i]['time']
         ot = UTCDateTime(time)
         depth = dat.iloc[i]['depth']
-        dist_km = dat.iloc[i]['dist(km)']
-        distance_in_degree = dist_km / 111
-        B_time = UTCDateTime(dat.iloc[i]['B_time'])
-        E_time = B_time + timewindow
+        event_lat = dat.iloc[i]['latitude']
+        event_lon = dat.iloc[i]['longitude']
+        if sta_lon is None and sta_lat is None:
+            dist_km = dat.iloc[i]['dist(km)']
+            distance_in_degree = dist_km / 111
+        else:
+            dist_km, distance_in_degree = haversine(
+                sta_lon, sta_lat, event_lon, event_lat)
 
-        E_time_list.append(E_time)
-    dat['E_time'] = E_time_list
+        a_time = abs_arrival_time(ot, depth, distance_in_degree)
+        tb_b = a_time - tb
+        tb_e = a_time
+        te_b = abs_phase_time(ot, vel_begin, dist_km)
+        te_e = abs_phase_time(ot, vel_end, dist_km)
 
-    dat.to_csv(catalog_outfile, index=False)
+        a_time_list.append(str(a_time))
+        tb_b_list.append(str(tb_b))
+        tb_e_list.append(str(tb_e))
+        te_b_list.append(str(te_b))
+        te_e_list.append(str(te_e))
+        dist_list.append(dist_km)
+
+    dat['A_time'] = a_time_list
+    dat['Tb_B_time'] = tb_b_list
+    dat['Tb_E_time'] = tb_e_list
+    dat['Te_B_time'] = te_b_list
+    dat['Te_E_time'] = te_e_list
+    if sta_lon is not None and sta_lat is not None:
+        dat['dist(km)'] = dist_list
+
+    dat.to_csv(catalog_file, index=False)
+
     return None
 
 
 # Main functions for background catalogs.
-def preprocess_Xiaojiang_absBEtime(dat_path, dat_file, timeWindow_len):
-    dat = pd.read_csv(os.path.join(dat_path, dat_file), encoding="gb2312")
-    # calculate B_time and E_time
-    B_time_list = []
-    E_time_list = []
-    for i in range(len(dat)):
-        time = dat.iloc[i]['time']
-        ot = UTCDateTime(time)
-        depth = dat.iloc[i]['depth']
-        dist_km = dat.iloc[i]['dist(km)']
-        distance_in_degree = dist_km / 111
-        B_time = a_abstime(ot, depth, distance_in_degree)
-
-        E_time = B_time + timeWindow_len
-
-        B_time_list.append(str(B_time))
-        E_time_list.append(str(E_time))
-    dat['B_time'] = B_time_list
-    dat['E_time'] = E_time_list
-
-    dat.to_csv(os.path.join(dat_path, dat_file), index=False)
-
-
-def catalog_during_days(teleseismic_catalog, out_file, dayWindow=30):
+def catalog_during_days(teleseismic_catalog, out_file, day_window=30):
     out_tele = []
 
     catalog = pd.read_csv(teleseismic_catalog)
 
     tele_ot = catalog['time'].values
-    A_time = catalog['A_time'].values
-    Tb_B = catalog['Tb_B_time'].values
-    Tb_E = catalog['Tb_E_time'].values
-    Te_B = catalog['Te_B_time'].values
-    Te_E = catalog['Te_E_time'].values
+    a_time = catalog['A_time'].values
+    tb_b = catalog['Tb_B_time'].values
+    tb_e = catalog['Tb_E_time'].values
+    te_b = catalog['Te_B_time'].values
+    te_e = catalog['Te_E_time'].values
 
     lat = catalog['latitude'].values
     lon = catalog['longitude'].values
@@ -237,37 +194,35 @@ def catalog_during_days(teleseismic_catalog, out_file, dayWindow=30):
     dist = catalog['dist(km)'].values
     f_min = catalog['f_min'].values
     f_max = catalog['f_max'].values
-    f_step = catalog['f_step'].values
     for i in range(len(tele_ot)):
         tele_datetime = UTCDateTime(tele_ot[i])
         print('Background days for: ' + str(tele_datetime))
-        A_time_datetime = UTCDateTime(A_time[i])
-        Tb_B_datetime = UTCDateTime(Tb_B[i])
-        Tb_E_datetime = UTCDateTime(Tb_E[i])
-        Te_B_datetime = UTCDateTime(Te_B[i])
-        Te_E_datetime = UTCDateTime(Te_E[i])
+        a_time_datetime = UTCDateTime(a_time[i])
+        tb_b_datetime = UTCDateTime(tb_b[i])
+        tb_e_datetime = UTCDateTime(tb_e[i])
+        te_b_datetime = UTCDateTime(te_b[i])
+        te_e_datetime = UTCDateTime(te_e[i])
 
-        days = np.arange(-1 * (dayWindow / 2), (dayWindow / 2) + 1, 1)
+        days = np.arange(-1 * (day_window / 2), (day_window / 2) + 1, 1)
         for day in days[days != 0]:
             tar_time = tele_datetime + timedelta(days=int(day))
-            tar_A_time = A_time_datetime + timedelta(days=int(day))
-            tar_Tb_B_time = Tb_B_datetime + timedelta(days=int(day))
-            tar_Tb_E_time = Tb_E_datetime + timedelta(days=int(day))
-            tar_Te_B_time = Te_B_datetime + timedelta(days=int(day))
-            tar_Te_E_time = Te_E_datetime + timedelta(days=int(day))
+            tar_a_time = a_time_datetime + timedelta(days=int(day))
+            tar_tb_b_time = tb_b_datetime + timedelta(days=int(day))
+            tar_tb_e_time = tb_e_datetime + timedelta(days=int(day))
+            tar_te_b_time = te_b_datetime + timedelta(days=int(day))
+            tar_te_e_time = te_e_datetime + timedelta(days=int(day))
             out_tele.append([str(tar_time),
-                             str(tar_A_time),
-                             str(tar_Tb_B_time),
-                             str(tar_Tb_E_time),
-                             str(tar_Te_B_time),
-                             str(tar_Te_E_time),
+                             str(tar_a_time),
+                             str(tar_tb_b_time),
+                             str(tar_tb_e_time),
+                             str(tar_te_b_time),
+                             str(tar_te_e_time),
                              lat[i],
                              lon[i],
                              depth[i],
                              dist[i],
                              f_min[i],
-                             f_max[i],
-                             f_step[i]])
+                             f_max[i]])
     out_dataframe = pd.DataFrame(
         data=out_tele,
         columns=[
@@ -282,7 +237,6 @@ def catalog_during_days(teleseismic_catalog, out_file, dayWindow=30):
             'depth',
             'dist(km)',
             'f_min',
-            'f_max',
-            'f_step'])
+            'f_max'])
     out_dataframe.to_csv(out_file, index=False)
     return None
