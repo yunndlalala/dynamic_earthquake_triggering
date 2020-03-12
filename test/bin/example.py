@@ -11,7 +11,7 @@ import json
 from dyntrigger.hifi.HiFi import HiFi
 from dyntrigger.utils.preprocess_tele_catalog import begin_v_end_v
 
-os.chdir("/Users/yunnaidan/Project/Dynamic_triggering/_source/test/bin")
+
 hypers_f = open('parameters.json', 'r', encoding='utf-8')
 hypers = json.load(hypers_f)
 
