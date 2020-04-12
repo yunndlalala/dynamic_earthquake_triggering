@@ -85,4 +85,4 @@ def run_associate(
 
     tele_background_pir_df.to_csv(out_file, index=False)
 
-    return tele_background_pir_df
+    return None

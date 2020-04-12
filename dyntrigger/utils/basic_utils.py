@@ -40,6 +40,23 @@ def peak_dynamic_stress(tele_event_tr, shear_wave_velocity, te_b, te_e, shear_mo
     return dynamic_stress
 
 
+def spherical_dist(lon1,lat1,lon2,lat2): #degree
+    """
+    Calculate the spherical distance between two points on the earth.
+    Using the Spherical Cosine Equation.
+    For spherical triangle ABC, the corresponding sides are a,b and c.
+    cos(a) = cos(b)*cos(c)+sin(b)sin(c)cos(A)
+    For B(lon1,lat1) and C(lon2,lat2), set A(0,90).
+    Then:
+    cos(a)=cos(90-lat2)*cos(90-lat1)+sin(90-lat1)*sin(90-lat2)*cos(lon2-lon1)
+    cos(a)=sin(lat2)*sin(lat1)+cos(lat1)*cos(lat2)*cos(lon2-lon1)
+    """
+    lon1, lat1, lon2, lat2 =map(radians,[lon1,lat1,lon2,lat2])
+    a=acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon2 - lon1))
+    r = 6371 #Radius of the Earth
+    return a*r, a*r /111
+
+
 def haversine(lon1, lat1, lon2, lat2):  # degree
     """
     Calculate the great circle distance between two points

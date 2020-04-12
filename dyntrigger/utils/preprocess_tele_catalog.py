@@ -146,7 +146,7 @@ def begin_v_end_v(catalog_file, sta_lat, sta_lon, tb, vel_begin, vel_end):
             dist_km = dat.iloc[i]['dist(km)']
             distance_in_degree = dist_km / 111
         else:
-            dist_km, distance_in_degree = haversine(
+            dist_km, distance_in_degree = spherical_dist(
                 sta_lon, sta_lat, event_lon, event_lat)
 
         a_time = abs_arrival_time(ot, depth, distance_in_degree)

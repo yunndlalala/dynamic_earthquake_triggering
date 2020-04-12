@@ -60,4 +60,4 @@ def run_cl(
             'time', 'confidence_level_value'])
     cl_dataframe.to_csv(out_file, index=False)
 
-    return cl_dataframe
+    return None
