@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import obspy
 from scipy.signal import welch
-from math import radians, cos, sin, asin, sqrt, ceil
+from math import radians, cos, sin, asin, sqrt, ceil, acos
 
 
 def psd(data, fs):
