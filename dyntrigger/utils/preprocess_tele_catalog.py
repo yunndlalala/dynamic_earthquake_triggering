@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from obspy.core.utcdatetime import UTCDateTime
 from obspy.taup import TauPyModel
 
-from dyntrigger.utils.basic_utils import haversine
+from dyntrigger.utils.basic_utils import haversine, spherical_dist
 
 
 
