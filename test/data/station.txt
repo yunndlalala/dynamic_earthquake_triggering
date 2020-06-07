@@ -1,2 +1,0 @@
-Network,Station,Channel,Latitude,Longitude
-CI,ADO,BHZ,34.55046,-117.43391

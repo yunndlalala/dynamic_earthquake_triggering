@@ -5,41 +5,22 @@
 @time: 2019/11/13
 @file: example.py
 """
-import os
 import json
+from dyntripy.triggering import Triggering
 
-from dyntrigger.hifi.HiFi import HiFi
-from dyntrigger.utils.preprocess_tele_catalog import begin_v_end_v
-
-
-hypers_f = open('parameters.json', 'r', encoding='utf-8')
+# Load input file and define an instance of Triggering.
+hypers_f = open('input.json', 'r', encoding='utf-8')
 hypers = json.load(hypers_f)
+tri = Triggering(hypers)
 
-detector = HiFi(hypers)
+# Generate the power integral database with two processes.
+tri.net_database(p=2)
 
-my_cores = 2
-detector.net_pi(cores=my_cores)
+# Calculate the logarithmic ratios of remote earthquakes with two processes.
+tri.net_ratio(p=2, bg=False)
 
-Tb = 18000
-vel_B = 5.0
-vel_E = 2.0
-ref_lat = 35.81574
-ref_lon = -117.59751
-begin_v_end_v(os.path.join(hypers['info']['root_path'],hypers['tele_pir']['tele_catalog']),
-          ref_lat, ref_lon, Tb, vel_B, vel_E)
+# Calculate the logarithmic ratios of background days with two processes.
+tri.net_ratio(p=2, bg=True)
 
-detector.net_tele_pir(cores=my_cores)
-
-detector.gen_background_catalog()
-detector.net_background_pir(cores=my_cores)
-
-detector.net_background_pir_asso(cores=my_cores)
-
-detector.net_cl(cores=my_cores)
-
-detector.show_psd()
-detector.show_bg_pir()
-
-detector.cal_peak_dynamic_stress()
-
-pass
+# Compute the confidence levels with two processes.
+tri.net_cl(p=2)
