@@ -1,8 +1,16 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+@author: yunnaidan
+@time: 2020/04/12
+@file: utils.py
+"""
 import re
 import numpy as np
 import pandas as pd
 from scipy.signal import welch
 from obspy import UTCDateTime
+from obspy.taup import TauPyModel
 from datetime import timedelta
 from math import radians, cos, sin, asin, sqrt, ceil
 
@@ -21,6 +29,98 @@ def gen_target_days(days, origin_times):
     return target_days_date
 
 
+def haversine(lon1, lat1, lon2, lat2):  # degree
+    """
+    Calculate the great circle distance between two points
+    on the earth (specified in decimal degrees)
+    """
+    # Translate degree to radian.
+    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+
+    # Haversine formula.
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+    c = 2 * asin(sqrt(a))
+    r = 6371  # Radius of the Earth.
+    return c * r, c * r / 111
+
+
+def arrival(ot, depth, distance_in_degree):
+    model = TauPyModel(model="iasp91")
+    arrivals = model.get_travel_times(source_depth_in_km=depth,
+                                      distance_in_degree=distance_in_degree)
+    arrival_time = ot + arrivals[0].time
+    return arrival_time
+
+
+def phase(ot, vel, distance_in_km):
+    travel_time = distance_in_km / vel
+    phase_time = ot + travel_time
+    return phase_time
+
+
+def gen_time_windows(catalog_file=None,
+                     reference_lat=None,
+                     reference_lon=None,
+                     tb=18000,
+                     te_b_vel=5.0,
+                     te_e_vel=2.0,
+                     out_file=None):
+    if catalog_file is None:
+        raise ValueError('Please input the catalog file of remote earthquakes!')
+    if reference_lat is None:
+        raise ValueError('Please input the latitude of reference point!')
+    if reference_lon is None:
+        raise ValueError('Please input the longitude of reference point!')
+    if out_file is None:
+        raise ValueError('Please input the output file!')
+
+    catalog = pd.read_csv(catalog_file)
+
+    dist = [haversine(reference_lon,
+                      reference_lat,
+                      catalog.iloc[i]['longitude'],
+                      catalog.iloc[i]['latitude'])
+            for i in range(len(catalog))]
+    dist_km = np.array(dist)[:, 0]
+    dist_degree = np.array(dist)[:, 1]
+
+    a_time_list = []
+    tb_b_list = []
+    tb_e_list = []
+    te_b_list = []
+    te_e_list = []
+    for row_index, row in catalog.iterrows():
+        time = row['time']
+        ot = UTCDateTime(time)
+        depth = row['depth']
+
+        a_time = arrival(ot, depth, dist_degree[row_index])
+        tb_b = a_time - tb
+        tb_e = a_time
+
+        te_b = phase(ot, te_b_vel, dist_km[row_index])
+        te_e = phase(ot, te_e_vel, dist_km[row_index])
+
+        a_time_list.append(str(a_time))
+        tb_b_list.append(str(tb_b))
+        tb_e_list.append(str(tb_e))
+        te_b_list.append(str(te_b))
+        te_e_list.append(str(te_e))
+
+    out_df = pd.DataFrame(columns=['time'],
+                          data=catalog['time'].values)
+    out_df['Tb_Begin'] = tb_b_list
+    out_df['Tb_End'] = tb_e_list
+    out_df['Te_Begin'] = te_b_list
+    out_df['Te_End'] = te_e_list
+
+    out_df.to_csv(out_file, index=False)
+
+    return None
+
+
 def psd(data, fs):
     nfft = 512
     seg = ceil(len(data) / (nfft / 2))
@@ -37,23 +137,6 @@ def psd(data, fs):
                        axis=-1)
 
     return pxx_all, f
-
-
-def haversine(lon1, lat1, lon2, lat2):  # degree
-    """
-    Calculate the great circle distance between two points
-    on the earth (specified in decimal degrees)
-    """
-    # Translate degree to radian.
-    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-
-    # Haversine formula.
-    dlon = lon2 - lon1
-    dlat = lat2 - lat1
-    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
-    c = 2 * asin(sqrt(a))
-    r = 6371  # Radius of the Earth.
-    return c * r, c * r / 111
 
 
 def load_gf(sac_file, gf_info_file):
@@ -109,7 +192,7 @@ def gf(sensitivity, normalizing, zeros, poles, f):
     return abs(gf)
 
 
-def catalog_during_days(teleseismic_catalog, out_file, day_window=[60, 60]):
+def catalog_during_days(teleseismic_catalog, out_file, day_window):
     out_tele = []
 
     catalog = pd.read_csv(teleseismic_catalog)
@@ -158,3 +241,4 @@ def catalog_during_days(teleseismic_catalog, out_file, day_window=[60, 60]):
         ])
     out_dataframe.to_csv(out_file, index=False)
     return None
+
