@@ -1,14 +1,25 @@
 # DynTriPy 
+## A package for detecting dynamic triggering.
+-------
+### Install
+#### by source code
+Download the [latest source code](https://github.com/yunndlalala/dynamic_earthquake_triggering/releases), unzip and enter package folder, and run the following code in the terminal.
 
-A package for detecting dynamic triggering.
-=======
+```
+python setup.py install
+```
 
-Download all files and run setup.py to install this package.
+#### by *pip*
+Run the following code in the terminal:
 
-We provide some test data and an example script in the folder of *test*. 
+```
+pip install dyntripy
+```
 
-### Input file 
-Before calculating, the parameters and data sources are needed to be configured in the file *input.json*. 
+### Usage 
+#### *Triggering* class
+*Triggering* is the implement of HiFi [Yun et al., 2019](https://doi.org/10.1029/2019GL083913) to detect dynamic triggering. An instance should be defined firstly by passing an input file containing all parameters used in the detection process.    
+We provide some test data, examples of input file and performing script of *dyntripy* on [our github](https://github.com/yunndlalala/dynamic_earthquake_triggering/tree/master/test). Please download and run them to test whether the *dyntripy* package can perform normally.   
 Detailed descriptions of the key words in the input file are as follows:
 - "data_source"
 	+ "station_file": file containing station names
@@ -29,3 +40,26 @@ Detailed descriptions of the key words in the input file are as follows:
 	+ "matched_ratio_path": folder to store the matched ratio of remote earthquakes and background days
 	+ "cl_path": folder to store the confidence levels
 	+ "threshold": threshold of confidence level to identify triggering
+	+ "figure_path": folder to store the figures about the distribution of the logarithmic ratio values for each remote earthquake at each station. If don't want to plot these figures, just set this parameter as "None".
+	
+#### Utility
+- dyntripy.utils.**gen_time_windows**(*catalog_file=None, reference_lat=None, reference_lon=None, tb=18000, te_b_vel=5.0, te_e_vel=2.0, out__file=None*)  
+Generate a class of $T_b$ and $T_e$, and output a catalog of remote earthquakes with origin time, start and end of $T_b$ and $T_e$.   
+    **Parameters:**   
+    + **catalog_file**: str  
+    The raw catalog of remote earthquakes with source locations.
+    + **reference_lat**: float  
+    The latitude of the reference point in the study area.
+    + **reference_lon**: float  
+    The longitude of the reference point in the study area.
+    + **tb**: float  
+    The length of $T_b$ in seconds.
+    + **te_b_vel**: float  
+    The velocity of a surface wave whose arrival is the start of $T_e$.
+    + **te_e_vel**: float  
+    The velocity of a surface wave whose arrival is the end of $T_e$.
+    + **out_file**: str
+    The catalog of remote earthquakes with the origin time, start and end time of $T_b$ and $T_e$.  
+
+    **Returns:**
+    + None
