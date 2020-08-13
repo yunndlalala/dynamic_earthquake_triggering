@@ -129,6 +129,9 @@ class Triggering(object):
             os.makedirs(self.hypers['net_cl']['cl_path'])
         if not os.path.exists(self.hypers['net_cl']['matched_ratio_path']):
             os.makedirs(self.hypers['net_cl']['matched_ratio_path'])
+        if self.hypers['net_cl']['figure_path'] is not None:
+            if not os.path.exists(self.hypers['net_cl']['figure_path']):
+                os.makedirs(self.hypers['net_cl']['figure_path'])
 
         for full_sta in self.sta_list:
             print (full_sta)
@@ -145,10 +148,18 @@ class Triggering(object):
             out_file = os.path.join(
                 self.hypers['net_cl']['cl_path'], full_sta + '.csv')
 
+            if self.hypers['net_cl']['figure_path'] is not None:
+                figure_out_folder = os.path.join(self.hypers['net_cl']['figure_path'], full_sta)
+                if not os.path.exists(figure_out_folder):
+                    os.makedirs(figure_out_folder)
+            else:
+                figure_out_folder = None
+
             ConfidenceLevel.run_cl_parallel(
                 background_pir_associated_file,
                 self.hypers['net_cl']['threshold'],
                 out_file,
+                figure_out_folder,
                 p)
             cl_df = pd.read_csv(out_file)
             cl_df.sort_values(by='time', inplace=True)
