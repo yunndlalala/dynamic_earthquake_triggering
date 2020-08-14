@@ -129,7 +129,7 @@ def psd(data, fs):
                        fs,
                        window='hanning',
                        nperseg=nperseg,
-                       noverlap=nperseg / 2,
+                       noverlap=int(nperseg / 2),
                        nfft=nfft,
                        detrend=None,
                        return_onesided=True,
