@@ -1,18 +1,29 @@
-import os
-from distutils.sysconfig import get_python_lib
+import setuptools
 
-# Set path
-print('>>> Set path...')
+with open("README.md", "r") as fh:
+    long_description = fh.read()
 
-pwd = os.getcwd()
-lib_path = get_python_lib()
-pth_file = os.path.join(lib_path, 'dyntripy.pth')
-with open(pth_file, 'w') as f:
-    f.write(pwd)
-
-# Install packages
-print('>>> Install packages...')
-try:
-    os.system('pip install -r requirements.txt')
-except BaseException:
-    print('Install failed!')
+setuptools.setup(
+    name="dyntripy", # Replace with your own username
+    version="3.2.2",
+    author="Naidan YUN",
+    author_email="yunnaidan@gmail.com",
+    description="A package for detecting dynamic triggering automatically",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/yunndlalala/dynamic_earthquake_triggering",
+    packages=setuptools.find_packages(),
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+    ],
+    install_requires=[
+        "obspy>=1.1.0",
+        "matplotlib>=3.1.2",
+        "pandas>=0.24.2",
+        "scipy>=1.1.0",
+        "numpy>=1.16.3"
+    ],
+    python_requires='>=3.6.0',
+)
