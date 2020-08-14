@@ -11,7 +11,7 @@ pip install dyntripy
 ### Usage 
 #### *Triggering* class
 *Triggering* is the implement of HiFi [Yun et al., 2019](https://doi.org/10.1029/2019GL083913) to detect dynamic triggering. An instance should be defined firstly by passing an input file containing all parameters used in the detection process.    
-We provide some test data, examples of input file and performing script of *dyntripy* on [our github](https://github.com/yunndlalala/dynamic_earthquake_triggering/tree/master/test). Please download and run them to test whether the *dyntripy* package can perform normally.   
+We provide some test data, examples of input file and performing script of *dyntripy* on [our github](https://github.com/yunndlalala/dynamic_earthquake_triggering/blob/master/test.zip). Please download and run them to test whether the *dyntripy* package can perform normally.   
 Detailed descriptions of the key words in the input file are as follows:
 - "data_source"
 	+ "station_file": file containing station names
