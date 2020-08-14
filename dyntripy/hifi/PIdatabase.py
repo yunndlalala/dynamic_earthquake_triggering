@@ -53,14 +53,18 @@ def abs_time(day_date, time_segment, i):
 
 
 def pi41day(
+        sac_file,
+        gf_info_file,
         year,
         day,
         sta,
         data_path,
         time_segment,
         f_win_list,
-        gf_parameters,
         out_file):
+
+    _, sensitivity, normalizing, zeros, poles = load_gf(sac_file, gf_info_file)
+    gf_parameters = [sensitivity, normalizing, zeros, poles]
 
     with open(out_file, 'a') as f:
         f.write('time')
@@ -126,17 +130,16 @@ def run_pi_parallel(
         if os.path.exists(out_file):
             continue
 
-        _, sensitivity, normalizing, zeros, poles = load_gf(sac_file, gf_info_file)
-        gf_parameters = [sensitivity, normalizing, zeros, poles]
         # pi41day(year, day, sta, data_path, time_segment, f_win_list, gf_parameters, out_file)
         tasks.append(
-            (year,
+            (sac_file,
+             gf_info_file,
+             year,
              day,
              sta,
              data_path,
              time_segment,
              f_win_list,
-             gf_parameters,
              out_file))
 
     print('\n')

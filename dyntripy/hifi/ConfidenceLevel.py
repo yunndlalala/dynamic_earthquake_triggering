@@ -12,6 +12,8 @@ from scipy import stats
 import multiprocessing
 import logging
 
+from dyntripy.plot_utils import distribution
+
 logging.basicConfig(
     filename='log.txt',
     format='%(asctime)s-%(name)s-%(levelname)s-%(module)s: %(message)s',
@@ -20,7 +22,7 @@ logging.basicConfig(
     filemode='w')
 
 
-def cl41event(row, threshold, out_file):
+def cl41event(row, threshold, out_file, figure_out_file):
     tele_pir = row['remote_earthquake_ratio']
     if tele_pir != 'None':
         tele_pir = float(tele_pir)
@@ -37,6 +39,14 @@ def cl41event(row, threshold, out_file):
                 tri_flag = int(1)
             else:
                 tri_flag = int(0)
+
+            if figure_out_file is not None:
+                distribution(
+                    background_pir_list,
+                    tele_pir,
+                    figure_out_file,
+                    ax=None)
+
     else:
         confidence_level_value = 'No RE'
         tri_flag = None
@@ -52,6 +62,7 @@ def run_cl_parallel(
         background_pir_associated_file,
         threshold,
         out_file,
+        figure_out_folder,
         cores):
     if os.path.exists(out_file):
         os.remove(out_file)
@@ -65,8 +76,14 @@ def run_cl_parallel(
     tasks = []
     for row_index, row in tele_background_pir_df.iterrows():
         print ('Prepare cl task %s' % row['time'], end='\r')
-        tasks.append((row, threshold, out_file))
-        # cl41event(row, threshold, out_file)
+
+        if figure_out_folder is not None:
+            figure_out_file = os.path.join(figure_out_folder, row['time'] + '.png')
+        else:
+            figure_out_file = None
+
+        tasks.append((row, threshold, out_file, figure_out_file))
+        # cl41event(row, threshold, out_file, figure_out_file)
     print ('\n')
 
     # chunksize is how many tasks will be processed by one processor
