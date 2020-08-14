@@ -2,14 +2,6 @@
 ## A package for detecting dynamic triggering.
 -------
 ### Install
-#### by source code
-Download the [latest source code](https://github.com/yunndlalala/dynamic_earthquake_triggering/releases), unzip and enter package folder, and run the following code in the terminal.
-
-```
-python setup.py install
-```
-
-#### by *pip*
 Run the following code in the terminal:
 
 ```
