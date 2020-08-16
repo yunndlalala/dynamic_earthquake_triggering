@@ -148,19 +148,16 @@ def pir41event(
         interrupt_e, pi_e, list4plot_e = sum_pi(column_name, tar_df_e)
 
         if interrupt_b or interrupt_e:
-            interrupt_final = True
-        else:
-            interrupt_final = False
-            pi_ratio = pir(pi_b, pi_e)
-            pi_ratio_log = np.log10(pi_ratio)
-
-        if interrupt_final:
             logging.warning(
                 'There is interrupt in this event %s!' %
                 str(event))
             pi_b = None
             pi_e = None
             pi_ratio_log = None
+        else:
+            pi_ratio = pir(pi_b, pi_e)
+            pi_ratio_log = np.log10(pi_ratio)
+
     else:
         logging.warning('There is no data for this event %s!' % str(event))
         pi_b = None
