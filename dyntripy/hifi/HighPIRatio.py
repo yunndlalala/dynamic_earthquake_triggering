@@ -9,15 +9,7 @@ import pandas as pd
 from obspy import UTCDateTime
 import multiprocessing
 import time
-import logging
-
-
-logging.basicConfig(
-    filename='log.txt',
-    format='%(asctime)s-%(name)s-%(levelname)s-%(module)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S %p',
-    level=logging.INFO,
-    filemode='w')
+import warnings
 
 
 def load_pi(full_sta, tb_b, te_e, pi_database_path):
@@ -31,6 +23,7 @@ def load_pi(full_sta, tb_b, te_e, pi_database_path):
     if b_day == e_day:
         tar_file = os.path.join(
             pi_database_path,
+            'PI_' +
             full_sta +
             '_' +
             str(b_day) +
@@ -40,6 +33,7 @@ def load_pi(full_sta, tb_b, te_e, pi_database_path):
             pi_data_frame = pd.read_csv(
                 os.path.join(
                     pi_database_path,
+                    'PI_' +
                     full_sta +
                     '_' +
                     str(b_day) +
@@ -130,44 +124,44 @@ def pir41event(
         f_step,
         pi_database_path,
         out_file):
+    try:
+        file_exist, pi_data_frame = load_pi(
+            full_sta, tb_b, te_e, pi_database_path)
 
-    file_exist, pi_data_frame = load_pi(
-        full_sta, tb_b, te_e, pi_database_path)
+        if file_exist:
+            pi_data_frame['time'] = [UTCDateTime(t)
+                                    for t in pi_data_frame['time']]
+            tar_df_b0 = pi_data_frame[(pi_data_frame['time'] >= tb_b)
+                                     & (pi_data_frame['time'] <= tb_e)]
+            tar_df_b = pi_data_frame.iloc[tar_df_b0.index - 1]
+            tar_df_e = pi_data_frame[(pi_data_frame['time'] >= te_b) & (
+                    pi_data_frame['time'] <= te_e)]
 
-    if file_exist:
-        pi_data_frame['time'] = [UTCDateTime(t)
-                                for t in pi_data_frame['time']]
-        tar_df_b0 = pi_data_frame[(pi_data_frame['time'] >= tb_b)
-                                 & (pi_data_frame['time'] <= tb_e)]
-        tar_df_b = pi_data_frame.iloc[tar_df_b0.index - 1]
-        tar_df_e = pi_data_frame[(pi_data_frame['time'] >= te_b) & (
-                pi_data_frame['time'] <= te_e)]
+            column_name = f_column_name(f_min, f_max, step=f_step)
+            interrupt_b, pi_b, list4plot_b = sum_pi(column_name, tar_df_b)
+            interrupt_e, pi_e, list4plot_e = sum_pi(column_name, tar_df_e)
 
-        column_name = f_column_name(f_min, f_max, step=f_step)
-        interrupt_b, pi_b, list4plot_b = sum_pi(column_name, tar_df_b)
-        interrupt_e, pi_e, list4plot_e = sum_pi(column_name, tar_df_e)
+            if interrupt_b or interrupt_e:
+                warnings.warn('There is interrupt in this event %s!' % str(event))
+                pi_b = None
+                pi_e = None
+                pi_ratio_log = None
+            else:
+                pi_ratio = pir(pi_b, pi_e)
+                pi_ratio_log = np.log10(pi_ratio)
 
-        if interrupt_b or interrupt_e:
-            logging.warning(
-                'There is interrupt in this event %s!' %
-                str(event))
+        else:
+            warnings.warn('There is no data for this event %s!' % str(event))
             pi_b = None
             pi_e = None
             pi_ratio_log = None
-        else:
-            pi_ratio = pir(pi_b, pi_e)
-            pi_ratio_log = np.log10(pi_ratio)
 
-    else:
-        logging.warning('There is no data for this event %s!' % str(event))
-        pi_b = None
-        pi_e = None
-        pi_ratio_log = None
-
-    with open(out_file, 'a') as f:
-        f.write(','.join([str(event)[:-4] + 'Z', str(pi_b), str(
-            pi_e), str(pi_ratio_log)]))
-        f.write('\n')
+        with open(out_file, 'a') as f:
+            f.write(','.join([str(event)[:-4] + 'Z', str(pi_b), str(
+                pi_e), str(pi_ratio_log)]))
+            f.write('\n')
+    except Exception as err_msg:
+        print(err_msg)
 
     return None
 

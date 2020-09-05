@@ -12,17 +12,8 @@ import numpy as np
 from scipy.integrate import simps
 from obspy.core.utcdatetime import UTCDateTime
 import multiprocessing
-import logging
 
 from dyntripy.utils import psd, load_gf, gf
-
-
-logging.basicConfig(
-    filename='log.txt',
-    format='%(asctime)s-%(name)s-%(levelname)s-%(module)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S %p',
-    level=logging.INFO,
-    filemode='w')
 
 
 def psd_integral(pxx_all, f, f_win, gf_parameters):
@@ -36,7 +27,7 @@ def psd_integral(pxx_all, f, f_win, gf_parameters):
     gf_list = [gf(sensitivity, normalizing, zeros, poles, f) for f in f_tar]
     counts = len(gf_list)
     pxx_tar_remove_response = [(pxx_tar[i] / (gf_list[i]**2)) * (10**18)
-                        for i in range(counts)]  # m/s to nm/s
+                               for i in range(counts)]  # m/s to nm/s
     pi = simps(pxx_tar_remove_response, f_tar)
     return pi
 
@@ -62,46 +53,50 @@ def pi41day(
         time_segment,
         f_win_list,
         out_file):
-
-    _, sensitivity, normalizing, zeros, poles = load_gf(sac_file, gf_info_file)
-    gf_parameters = [sensitivity, normalizing, zeros, poles]
-
-    with open(out_file, 'a') as f:
-        f.write('time')
-        for f_win in f_win_list:
-            f.write(',' + str(int(f_win[0])) + '-' + str(int(f_win[1])))
-        f.write('\n')
-
-    st = obspy.read(os.path.join(data_path, str(year),
-                                 day, '.'.join([day, sta])))
-    tr = st[0]
-    tr.detrend('linear')
-    tr.detrend('constant')
-    fs = tr.stats.sampling_rate
-    start_time = tr.stats.starttime
-
-    segment_count = int(86400 / time_segment)
-    for i in range(segment_count):
-        abs_time_value = abs_time(day, time_segment, i)
-        start_point_index = max(0, round((abs_time_value-start_time) * fs))
-        end_point_index = max(0, round((abs_time_value + time_segment - start_time) * fs))
-        # If the index exceeds the length of the data, no error will be thrown,
-        # but empty array.
-        data = tr.data[start_point_index:end_point_index]
-        if len(data) != 0:
-            pxx_all, f = psd(data, fs)
-            pi_list = []
-            for f_win in f_win_list:
-                pi = psd_integral(pxx_all, f, f_win, gf_parameters)
-                pi_list.append(pi)
-        else:
-            pi_list = [0.0 for _ in f_win_list]
+    try:
+        _, sensitivity, normalizing, zeros, poles = load_gf(sac_file, gf_info_file)
+        gf_parameters = [sensitivity, normalizing, zeros, poles]
 
         with open(out_file, 'a') as f:
-            f.write(str(abs_time_value)[:-4] + 'Z')
-            for pi in pi_list:
-                f.write(',' + str(pi))
+            f.write('time')
+            for f_win in f_win_list:
+                f.write(',' + str(int(f_win[0])) + '-' + str(int(f_win[1])))
             f.write('\n')
+
+        st = obspy.read(os.path.join(data_path, str(year),
+                                     day, '.'.join([day, sta])))
+        tr = st[0]
+        tr.detrend('linear')
+        tr.detrend('constant')
+        fs = tr.stats.sampling_rate
+        start_time = tr.stats.starttime
+
+        segment_count = int(86400 / time_segment)
+        for i in range(segment_count):
+            abs_time_value = abs_time(day, time_segment, i)
+            start_point_index = max(0, round((abs_time_value - start_time) * fs))
+            end_point_index = max(
+                0, round(
+                    (abs_time_value + time_segment - start_time) * fs))
+            # If the index exceeds the length of the data, no error will be thrown,
+            # but empty array.
+            data = tr.data[start_point_index:end_point_index]
+            if len(data) != 0:
+                pxx_all, f = psd(data, fs)
+                pi_list = []
+                for f_win in f_win_list:
+                    pi = psd_integral(pxx_all, f, f_win, gf_parameters)
+                    pi_list.append(pi)
+            else:
+                pi_list = [0.0 for _ in f_win_list]
+
+            with open(out_file, 'a') as f:
+                f.write(str(abs_time_value)[:-4] + 'Z')
+                for pi in pi_list:
+                    f.write(',' + str(pi))
+                f.write('\n')
+    except Exception as err_msg:
+        print(err_msg)
 
 
 def run_pi_parallel(
@@ -123,10 +118,15 @@ def run_pi_parallel(
                        str(target_date.month).zfill(2),
                        str(target_date.day).zfill(2)])
         sac_file = '.'.join([day, sta])
-        if not os.path.exists(os.path.join(data_path, str(year), day, sac_file)):
+        if not os.path.exists(
+            os.path.join(
+                data_path,
+                str(year),
+                day,
+                sac_file)):
             continue
 
-        out_file = os.path.join(out_folder, str(sta) + '_' + str(day) + '.csv')
+        out_file = os.path.join(out_folder, 'PI_' + str(sta) + '_' + str(day) + '.csv')
         if os.path.exists(out_file):
             continue
 

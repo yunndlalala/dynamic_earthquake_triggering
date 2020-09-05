@@ -12,14 +12,6 @@ from obspy.core import UTCDateTime
 from datetime import timedelta
 import multiprocessing
 import time
-import logging
-
-logging.basicConfig(
-    filename='log.txt',
-    format='%(asctime)s-%(name)s-%(levelname)s-%(module)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S %p',
-    level=logging.INFO,
-    filemode='w')
 
 
 def remove_abnormal(lst, method='Gaussion'):
@@ -57,21 +49,24 @@ def get_tar_background(tele, daywindow):
 
 
 def associate(tele, day_window, tele_pir_df, background_pir_df, pir_column_name, out_file):
-    tar_background_list = get_tar_background(tele, day_window)
-    bg_pir_list_str = background_pir_df[background_pir_df['time'].isin(
-        tar_background_list)][pir_column_name].values
-    bg_pir_list_str = bg_pir_list_str[bg_pir_list_str != 'None']
-    bg_pir_list = bg_pir_list_str.astype(np.float64)
-    # Remove the abnormal data.
-    bg_pir_list_filter = remove_abnormal(
-        bg_pir_list, method='Gaussion')
-    bg_pir_list_filter_str = ' '.join([str(i) for i in bg_pir_list_filter])
+    try:
+        tar_background_list = get_tar_background(tele, day_window)
+        bg_pir_list_str = background_pir_df[background_pir_df['time'].isin(
+            tar_background_list)][pir_column_name].values
+        bg_pir_list_str = bg_pir_list_str[bg_pir_list_str != 'None']
+        bg_pir_list = bg_pir_list_str.astype(np.float64)
+        # Remove the abnormal data.
+        bg_pir_list_filter = remove_abnormal(
+            bg_pir_list, method='Gaussion')
+        bg_pir_list_filter_str = ' '.join([str(i) for i in bg_pir_list_filter])
 
-    tele_pir = str(tele_pir_df[tele_pir_df['time'] == str(tele)[:-4] + 'Z'][pir_column_name].values[0])
+        tele_pir = str(tele_pir_df[tele_pir_df['time'] == str(tele)[:-4] + 'Z'][pir_column_name].values[0])
 
-    with open(out_file, 'a') as f:
-        f.write(','.join([str(tele)[:-4] + 'Z', tele_pir, bg_pir_list_filter_str]))
-        f.write('\n')
+        with open(out_file, 'a') as f:
+            f.write(','.join([str(tele)[:-4] + 'Z', tele_pir, bg_pir_list_filter_str]))
+            f.write('\n')
+    except Exception as err_msg:
+        print(err_msg)
 
     return None
 

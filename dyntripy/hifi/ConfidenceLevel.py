@@ -10,50 +10,45 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 import multiprocessing
-import logging
 
 from dyntripy.plot_utils import distribution
 
-logging.basicConfig(
-    filename='log.txt',
-    format='%(asctime)s-%(name)s-%(levelname)s-%(module)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S %p',
-    level=logging.INFO,
-    filemode='w')
-
 
 def cl41event(row, threshold, out_file, figure_out_file):
-    tele_pir = row['remote_earthquake_ratio']
-    if tele_pir != 'None':
-        tele_pir = float(tele_pir)
-        background_pirs = re.split(' +', row['background_day_ratio'])
-        background_pir_list = np.array(background_pirs, dtype='float64')
-        if len(background_pir_list) < 30:
-            confidence_level_value = 'Insufficient RBs'
-            tri_flag = None
-        else:
-            mean, std = stats.norm.fit(background_pir_list)
-            background_norm = stats.norm(loc=mean, scale=std)
-            confidence_level_value = background_norm.cdf(tele_pir)
-            if confidence_level_value >= threshold:
-                tri_flag = int(1)
+    try:
+        tele_pir = row['remote_earthquake_ratio']
+        if tele_pir != 'None':
+            tele_pir = float(tele_pir)
+            background_pirs = re.split(' +', row['background_day_ratio'])
+            background_pir_list = np.array(background_pirs, dtype='float64')
+            if len(background_pir_list) < 30:
+                confidence_level_value = 'Insufficient RBs'
+                tri_flag = None
             else:
-                tri_flag = int(0)
+                mean, std = stats.norm.fit(background_pir_list)
+                background_norm = stats.norm(loc=mean, scale=std)
+                confidence_level_value = background_norm.cdf(tele_pir)
+                if confidence_level_value >= threshold:
+                    tri_flag = int(1)
+                else:
+                    tri_flag = int(0)
 
-            if figure_out_file is not None:
-                distribution(
-                    background_pir_list,
-                    tele_pir,
-                    figure_out_file,
-                    ax=None)
+                if figure_out_file is not None:
+                    distribution(
+                        background_pir_list,
+                        tele_pir,
+                        figure_out_file,
+                        ax=None)
 
-    else:
-        confidence_level_value = 'No RE'
-        tri_flag = None
+        else:
+            confidence_level_value = 'No RE'
+            tri_flag = None
 
-    with open(out_file, 'a') as f:
-        f.write(','.join([str(row['time']), str(confidence_level_value), str(tri_flag)]))
-        f.write('\n')
+        with open(out_file, 'a') as f:
+            f.write(','.join([str(row['time']), str(confidence_level_value), str(tri_flag)]))
+            f.write('\n')
+    except Exception as err_msg:
+        print(err_msg)
 
     return None
 
