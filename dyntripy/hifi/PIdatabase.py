@@ -9,14 +9,16 @@ import os
 import time
 import obspy
 import numpy as np
+import pandas as pd
+from scipy.signal import spectrogram
 from scipy.integrate import simps
-from obspy.core.utcdatetime import UTCDateTime
 import multiprocessing
+import warnings
 
-from dyntripy.utils import psd, load_gf, gf
+from dyntripy.utils import load_gf, gf
 
 
-def psd_integral(pxx_all, f, f_win, gf_parameters):
+def _psd_integral(pxx_all, f, f_win, gf_parameters):
     f_min = f_win[0]
     f_max = f_win[1]
     f_index = np.where((f >= f_min) & (f <= f_max))
@@ -32,17 +34,6 @@ def psd_integral(pxx_all, f, f_win, gf_parameters):
     return pi
 
 
-def abs_time(day_date, time_segment, i):
-    year = int(str(day_date)[:4])
-    month = int(str(day_date)[4:6])
-    day = int(str(day_date)[6:8])
-    hour = int((i * time_segment) / 3600)
-    minute = int(((i * time_segment) % 3600) / 60)
-    second = int(((i * time_segment) % 3600) % 60)
-    abs_time_value = UTCDateTime(year, month, day, hour, minute, second)
-    return abs_time_value
-
-
 def pi41day(
         sac_file,
         gf_info_file,
@@ -50,102 +41,144 @@ def pi41day(
         day,
         sta,
         data_path,
-        time_segment,
+        nperseg,
+        noverlap,
+        nfft,
         f_win_list,
         out_file):
     try:
         _, sensitivity, normalizing, zeros, poles = load_gf(sac_file, gf_info_file)
-        gf_parameters = [sensitivity, normalizing, zeros, poles]
+        if zeros is not None:
+            gf_parameters = [sensitivity, normalizing, zeros, poles]
 
-        with open(out_file, 'a') as f:
-            f.write('time')
-            for f_win in f_win_list:
-                f.write(',' + str(int(f_win[0])) + '-' + str(int(f_win[1])))
-            f.write('\n')
+            st = obspy.read(os.path.join(data_path, str(year), day, '.'.join([day, sta])))
+            tr = st[0]
+            tr.detrend('linear')
+            tr.detrend('constant')
+            fs = tr.stats.sampling_rate
+            starttime = tr.stats.starttime
 
-        st = obspy.read(os.path.join(data_path, str(year),
-                                     day, '.'.join([day, sta])))
-        tr = st[0]
-        tr.detrend('linear')
-        tr.detrend('constant')
-        fs = tr.stats.sampling_rate
-        start_time = tr.stats.starttime
+            f, t, pxx_all = spectrogram(
+                tr.data, fs,
+                window='hanning', nperseg=nperseg, noverlap=noverlap, nfft=nfft, detrend=None,
+                return_onesided=True, scaling='density', axis=-1, mode='psd'
+            )
+            pi_array = np.array([
+                [_psd_integral(pxx_all[:, t_i], f, f_win, gf_parameters) for f_win in f_win_list]
+                for t_i in range(len(t) - 1)
+            ])
 
-        segment_count = int(86400 / time_segment)
-        for i in range(segment_count):
-            abs_time_value = abs_time(day, time_segment, i)
-            start_point_index = max(0, round((abs_time_value - start_time) * fs))
-            end_point_index = max(
-                0, round(
-                    (abs_time_value + time_segment - start_time) * fs))
-            # If the index exceeds the length of the data, no error will be thrown,
-            # but empty array.
-            data = tr.data[start_point_index:end_point_index]
-            if len(data) != 0:
-                pxx_all, f = psd(data, fs)
-                pi_list = []
-                for f_win in f_win_list:
-                    pi = psd_integral(pxx_all, f, f_win, gf_parameters)
-                    pi_list.append(pi)
-            else:
-                pi_list = [0.0 for _ in f_win_list]
+            t = np.full(len(t), starttime) + t
+            output_array = np.column_stack((t[:-1], pi_array))
+            output_df = pd.DataFrame(
+                data=output_array,
+                columns=['time'] + [str(int(f_win[0])) + '-' + str(int(f_win[1])) for f_win in f_win_list]
+            )
+            output_df.to_csv(out_file, index=False)
 
-            with open(out_file, 'a') as f:
-                f.write(str(abs_time_value)[:-4] + 'Z')
-                for pi in pi_list:
-                    f.write(',' + str(pi))
-                f.write('\n')
     except Exception as err_msg:
+        print(sac_file)
         print(err_msg)
+        if os.path.exists(out_file):
+            os.remove(out_file)
+
+
+def pi41day_run(
+        sac_file,
+        gf_info_file,
+        year,
+        day,
+        sta,
+        data_path,
+        nperseg,
+        noverlap,
+        nfft,
+        f_win_list,
+        out_file
+):
+    try:
+        if os.path.exists(out_file):
+            print('%s already exists!' % out_file)
+        else:
+            if not os.path.exists(os.path.join(data_path, str(year), day, sac_file)):
+                warnings.warn('No %s!' % sac_file)
+            else:
+                pi41day(
+                    sac_file,
+                    gf_info_file,
+                    year,
+                    day,
+                    sta,
+                    data_path,
+                    nperseg,
+                    noverlap,
+                    nfft,
+                    f_win_list,
+                    out_file
+                )
+    except Exception as err_msg:
+        print(sac_file)
+        print(err_msg)
+    return None
 
 
 def run_pi_parallel(
         sta,
         target_dates,
         data_path,
-        time_segment,
+        # time_segment,
+        nperseg,
+        noverlap,
+        nfft,
         f_win_list,
         gf_info_file,
         out_folder,
-        cores):
-
+        cores
+):
     pool = multiprocessing.Pool(processes=cores)
     tasks = []
+
     for target_date in sorted(target_dates):
-        print('Prepare database task ' + str(target_date), end='\r')
         year = target_date.year
         day = ''.join([str(target_date.year).zfill(4),
                        str(target_date.month).zfill(2),
                        str(target_date.day).zfill(2)])
         sac_file = '.'.join([day, sta])
-        if not os.path.exists(
-            os.path.join(
-                data_path,
-                str(year),
-                day,
-                sac_file)):
-            continue
-
         out_file = os.path.join(out_folder, 'PI_' + str(sta) + '_' + str(day) + '.csv')
-        if os.path.exists(out_file):
-            continue
 
-        # pi41day(year, day, sta, data_path, time_segment, f_win_list, gf_parameters, out_file)
-        tasks.append(
-            (sac_file,
-             gf_info_file,
-             year,
-             day,
-             sta,
-             data_path,
-             time_segment,
-             f_win_list,
-             out_file))
+        # pi41day_run(
+        #     sac_file,
+        #     gf_info_file,
+        #     year,
+        #     day,
+        #     sta,
+        #     data_path,
+        #     # time_segment,
+        #     nperseg,
+        #     noverlap,
+        #     nfft,
+        #     f_win_list,
+        #     out_file
+        # )
+
+        tasks.append((
+            sac_file,
+            gf_info_file,
+            year,
+            day,
+            sta,
+            data_path,
+            nperseg,
+            noverlap,
+            nfft,
+            f_win_list,
+            out_file
+        ))
 
     print('\n')
 
     # chunksize is how many tasks will be processed by one processor
-    rs = pool.starmap_async(pi41day, tasks, chunksize=1)
+    rs = pool.starmap_async(pi41day_run, tasks, chunksize=1)
     # close() & join() is necessary
     pool.close()
     # simple progress bar
