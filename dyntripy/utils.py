@@ -18,8 +18,6 @@ from datetime import timedelta
 from math import radians, cos, sin, asin, sqrt, ceil
 import warnings
 
-from seispy import waveform as wf
-
 
 def gen_target_days(days, origin_times):
     days_before, days_after = days

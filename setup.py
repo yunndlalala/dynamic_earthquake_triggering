@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="dyntripy", # Replace with your own username
-    version="3.2.4",
+    version="3.2.5",
     author="Naidan YUN",
     author_email="yunnaidan@gmail.com",
     description="A package for detecting dynamic triggering automatically",
