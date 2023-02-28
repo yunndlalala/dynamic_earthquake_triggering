@@ -1,5 +1,5 @@
 # DynTriPy 
-** Note: please use the released version or install it by pip. Codes in this restory are still in development.
+** Note: please use the released version or install it by pip. Codes in this repository are still in development.
 ## A package for detecting dynamic triggering.
 -------
 ### Install
