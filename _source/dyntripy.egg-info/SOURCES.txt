@@ -1,0 +1,17 @@
+LICENSE
+README.md
+setup.py
+dyntripy/__init__.py
+dyntripy/plot_utils.py
+dyntripy/triggering.py
+dyntripy/utils.py
+dyntripy.egg-info/PKG-INFO
+dyntripy.egg-info/SOURCES.txt
+dyntripy.egg-info/dependency_links.txt
+dyntripy.egg-info/requires.txt
+dyntripy.egg-info/top_level.txt
+dyntripy/hifi/AssociateBackgroundPIR.py
+dyntripy/hifi/ConfidenceLevel.py
+dyntripy/hifi/HighPIRatio.py
+dyntripy/hifi/PIdatabase.py
+dyntripy/hifi/__init__.py
